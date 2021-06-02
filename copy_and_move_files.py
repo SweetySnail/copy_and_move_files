@@ -33,6 +33,7 @@ def get_mb(byte_temp):
 def read_all_file(path, time, flist):
     file_list = os.listdir(path)
     for fname in file_list:
+        
         fpath = os.path.join(path, fname)
         ctime = os.path.getmtime(fpath)
         timestamp = datetime.datetime.fromtimestamp(ctime)
@@ -50,6 +51,7 @@ def read_all_file(path, time, flist):
 					"Path": fpath
 					}
 				)
+        
     return flist
 
 ## 변경 파일 출력 함수
@@ -58,11 +60,14 @@ def get_addlist(slist, tlist):
     for source in slist:
         # 1. 동일한 파일 이름 없음
         is_diff = False
-        if source['Name'] not in tlist:
+
+        temp = source['Path'].split(path_source)
+        if temp[1] not in tlist:
             is_diff = True
         else:
             # 2. 최근 수정 시간 다름 or 3. 파일 사이즈 다름
-            target = tlist[source['Name']]
+            # target = tlist[source['Name']]
+            target = tlist[temp[1]]
             if  source['Time'] != target['Time'] or source['Size'] != target['Size']:
                 is_diff = True
         
@@ -71,7 +76,7 @@ def get_addlist(slist, tlist):
     return add_list
 
 ## 디렉토리 생성 함수
-def createFolder(directory):
+def createDirectory(directory):
     try:
         if not os.path.exists(directory):
             os.makedirs(directory)
@@ -79,20 +84,39 @@ def createFolder(directory):
         print("Error: 이미 존재하는 폴더입니다. - " + directory)
 
 ## 변경파일 복사 함수
-def copy_all_file(file_list, new_path):
+def copy_all_file(file_list, path_source):
     curtime_str = datetime.datetime.now().strftime('%Y-%m-%d')
-    createFolder(curtime_str)
-    copydir_str = os.path.join(os.getcwd(), curtime_str)
+    createDirectory(curtime_str)
+    
+    ## 파일 복사 진행
     for file in file_list:
-        copyfile = os.path.join(copydir_str, file['Name'])
-        shutil.copy2(file['Path'], copyfile)
+        copydir_str = os.path.join(os.getcwd(), curtime_str)  # 2021-06-02
+        strr = file['Path'].split(path_source)
+        copy_path = copydir_str + strr[1]
+        strr2 = strr[1].split('\\')
+        
+        for i, v in enumerate(strr2):
+            if i == 0: # 첫 공백 제거
+                continue
+            elif i == len(strr2)-1: # 마지막 경로(파일)
+                copy_file = os.path.join(file['Path'], copy_path)
+                shutil.copy2(file['Path'],copy_file)
+                
+            else: # 중간 경로(디렉토리)
+                curr_path = os.path.join(copydir_str, v)
+                createDirectory(curr_path)
+                copydir_str = curr_path
 
 ## 텍스트 결과물 출력 함수
 def make_txt(list, name):
     text_str = os.path.join(os.getcwd(), name + ".txt")
     f = open(text_str, "w")
+    f.write("Total: " + str(len(list)) + "\n")
     f.write(json.dumps(list, indent=4, ensure_ascii=False))
     f.close()
+
+
+
 
 ###########################################
 ###                 Main                ###
@@ -110,12 +134,14 @@ path_target = 'C:\\Users\\재현\\Desktop\\NDS\\0006_Python\\testB' ###
 
 print("****  코드 실행 경로: " + os.getcwd())
 
+
+
 ## Source 파일 목록 추출
 print(" .\n .\n .\n==================  Source Start  =====================")
 start_time = time.time()
 source = []
 flist_source = read_all_file(path_source, in_time, source)
-make_txt(flist_source, "source")
+make_txt(flist_source, "Source_Filelist")
 print("Source 실행시간: {}".format(time.time() - start_time))
 print("==================   Source End   ===================== \n.\n.\n.")
 
@@ -126,15 +152,17 @@ print("==================  Target Start  =====================")
 start_time = time.time()
 target = []
 flist_target_temp = read_all_file(path_target, in_time, target)
+
 flist_target = {}
-for target in flist_target_temp:
-    flist_target[target['Name']] = {
-            "Name": target['Name'],
-            "Size": target['Size'],
-            "Time": target['Time'],
-            "Path": target['Path']
+for targets in flist_target_temp:
+    temp = targets['Path'].split(path_target)
+    flist_target[temp[1]] = {
+            "Name": targets['Name'],
+            "Size": targets['Size'],
+            "Time": targets['Time'],
+            "Path": targets['Path']
     }
-make_txt(flist_target, "target")
+make_txt(flist_target, "Target_Filelist")
 print("Target 실행시간: {}".format(time.time() - start_time))
 print("==================   Target End   ===================== \n.\n.\n.")
 
@@ -144,141 +172,24 @@ print("==================   Target End   ===================== \n.\n.\n.")
 print("==================  Extract Add List Start  =====================")
 start_time = time.time()
 file_list_add = get_addlist(flist_source, flist_target)
-make_txt(file_list_add, "add")
+make_txt(file_list_add, "Add_Filelist")
 print("Extract Add List 실행시간: {}".format(time.time() - start_time))
 print("==================   Extract Add List End   ===================== \n.\n.\n.")
 
 
 
 ## 파일 복사
-copy_all_file(file_list_add, os.getcwd())
+print("==================  Copy File Start  =====================")
+start_time = time.time()
+copy_all_file(file_list_add, path_source)
+print("Copy File 실행시간: {}".format(time.time() - start_time))
+print("==================   Copy File End   ===================== \n.\n.\n.")
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# #### 기존 코드
-# ## Source 경로 파일 추출
-# file_list_source = []
-
-# filelist_source = os.listdir(path_source)
-# for fname in filelist_source:
-#     fpath = os.path.join(path_source, fname)
-#     ctime = os.path.getmtime(fpath)
-#     timestamp = datetime.datetime.fromtimestamp(ctime)
-#     if timestamp > in_time:
-#         fsize = get_mb(os.path.getsize(fpath))
-#         ftime = timestamp
-#         fis_Dict = os.path.isdir(fpath)
-
-#         file_list_source.append(
-#             {
-#             "Name": fname,
-#             "Size": fsize,
-#             "Time": ftime,
-#             "Path": fpath,
-#             "is_Dict": fis_Dict
-#             }
-#         )
-
-
-
-
-
-# print("Source 실행시간: {}".format(time.time() - start_time))
-# print("==================   Source End   ===================== \n.\n.\n.")
-
-# print("==================  Target Start  =====================")
-# start_time = time.time()
-# ## Target 경로 파일 추출
-# file_list_target = {}
-
-# filelist_target = os.listdir(path_target)
-# for fname in filelist_target:
-#     fpath = os.path.join(path_source, fname)
-#     ctime = os.path.getmtime(fpath)
-#     timestamp = datetime.datetime.fromtimestamp(ctime)
-#     if timestamp > in_time:
-#         fsize = get_mb(os.path.getsize(fpath))
-#         ftime = timestamp
-#         fis_Dict = os.path.isdir(fpath)
-        
-#         file_list_target[fname] = {
-#             "Name": fname,
-#             "Size": fsize,
-#             "Time": ftime,
-#             "Path": fpath,
-#             "is_Dict": fis_Dict
-#         }
-# print("Target 실행시간: {}".format(time.time() - start_time))
-# print("==================   Target End   ===================== \n.\n.\n.")
-
-# ## 추가해야할 파일 목록
-# file_list_add = []
-# for source in file_list_source:
-#     # 1. 동일한 파일 이름 없음
-#     is_diff = False
-#     if source['Name'] not in file_list_target:
-#         is_diff = True
-#     else:
-#         # 2. 최근 수정 시간 다름 or 3. 파일 사이즈 다름
-#         target = file_list_target[source['Name']]
-#         if  source['Time'] != target['Time'] or source['Size'] != target['Size']:
-#             is_diff = True
-    
-#     if is_diff:    
-#         file_list_add.append(source)
-
-# ## 변경된 파일 복사(디렉토리일 경우 에러발생)
-# print("현재경로 - " + os.getcwd()) ###
-# curtime_str = datetime.datetime.now().strftime('%Y-%m-%d')
-# createFolder(curtime_str)
-# copydir_str = os.path.join(os.getcwd(), curtime_str)
-# for file in file_list_add:
-#     ## 파일 복사
-#     if file['is_Dict'] == False:
-#         copyfile = os.path.join(copydir_str, file['Name'])
-#         shutil.copy2(file['Path'], copyfile)
-#     ## 폴더 복사
-#     # else:
-#     #     # createFolder()
-#     #     copyfile = os.path.join(copydir_str, file['Name'])
-#     #     shutil.copy2(file['Path'], copyfile)
-
-# # shutil.copy2()
-
-# ## 텍스트 파일 출력
-# text_str = os.path.join(os.getcwd(), curtime_str + ".txt")
-# f = open(text_str, "w")
-# f.write(json.dumps(file_list_add, indent=4, ensure_ascii=False))
-# f.close()
+## 전체결과 파일 생성
+text_str = os.path.join(os.getcwd(), "Result.txt")
+f = open(text_str, "w")
+f.write("** 작업이 완료되었습니다.")
+print("** 작업이 완료되었습니다.")
+f.close()
