@@ -100,7 +100,12 @@ def copy_all_file(file_list, path_source):
                 continue
             elif i == len(strr2)-1: # 마지막 경로(파일)
                 copy_file = os.path.join(file['Path'], copy_path)
-                shutil.copy2(file['Path'],copy_file)
+                if os.path.isfile(copy_file):  # 이미 있는 파일이면
+                    temp = time.strftime('%H-%M-%S')
+                    copy_file = copy_file + "_" + temp
+                    shutil.copy2(file['Path'],copy_file)
+                else:  # 없는 파일이면
+                    shutil.copy2(file['Path'],copy_file)
                 
             else: # 중간 경로(디렉토리)
                 curr_path = os.path.join(copydir_str, v)
@@ -121,6 +126,11 @@ def make_txt(list, name):
 ###########################################
 ###                 Main                ###
 ###########################################
+## 전체결과 파일 생성
+text_str = os.path.join(os.getcwd(), "Result.txt")
+f_result = open(text_str, "w")
+f_result.write("** 코드 시작 ** \n")
+
 json.JSONEncoder.default = datetime_handler
 
 ## 시간 입력
@@ -132,9 +142,7 @@ in_time = get_time()
 path_source = 'C:\\Users\\재현\\Desktop\\NDS\\0006_Python\\testA' ###
 path_target = 'C:\\Users\\재현\\Desktop\\NDS\\0006_Python\\testB' ###
 
-print("****  코드 실행 경로: " + os.getcwd())
-
-
+f_result.write("** 코드 실행경로: " + os.getcwd())
 
 ## Source 파일 목록 추출
 print(" .\n .\n .\n==================  Source Start  =====================")
@@ -142,7 +150,10 @@ start_time = time.time()
 source = []
 flist_source = read_all_file(path_source, in_time, source)
 make_txt(flist_source, "Source_Filelist")
-print("Source 실행시간: {}".format(time.time() - start_time))
+f_result.write("\n\n** Source 파일 리스트 생성 소요시간: {}초".format(round(time.time() - start_time),4))
+f_result.write("\n** Source 파일 갯수 : " + str(len(flist_source)) + "개")
+f_result.write("\n** Source 파일 결과물 : Source_Filelist")
+print("Source 실행시간: {}초".format(round(time.time() - start_time),4))
 print("==================   Source End   ===================== \n.\n.\n.")
 
 
@@ -163,7 +174,10 @@ for targets in flist_target_temp:
             "Path": targets['Path']
     }
 make_txt(flist_target, "Target_Filelist")
-print("Target 실행시간: {}".format(time.time() - start_time))
+f_result.write("\n\n** Target 파일 리스트 생성 소요시간: {}초".format(round(time.time() - start_time),4))
+f_result.write("\n** Target 파일 갯수 : " + str(len(flist_target_temp)) + "개")
+f_result.write("\n** Target 파일 결과물 : Target_Filelist")
+print("Target 실행시간: {}초".format(round(time.time() - start_time),4))
 print("==================   Target End   ===================== \n.\n.\n.")
 
 
@@ -173,7 +187,10 @@ print("==================  Extract Add List Start  =====================")
 start_time = time.time()
 file_list_add = get_addlist(flist_source, flist_target)
 make_txt(file_list_add, "Add_Filelist")
-print("Extract Add List 실행시간: {}".format(time.time() - start_time))
+f_result.write("\n\n** 복사할 파일 리스트 생성 소요시간: {}초".format(round(time.time() - start_time),4))
+f_result.write("\n** 복사할 파일 갯수 : " + str(len(file_list_add)) + "개")
+f_result.write("\n** 복사할 파일 결과물 : Add_Filelist")
+print("Extract Add List 실행시간: {}초".format(round(time.time() - start_time),4))
 print("==================   Extract Add List End   ===================== \n.\n.\n.")
 
 
@@ -182,14 +199,12 @@ print("==================   Extract Add List End   ===================== \n.\n.\
 print("==================  Copy File Start  =====================")
 start_time = time.time()
 copy_all_file(file_list_add, path_source)
-print("Copy File 실행시간: {}".format(time.time() - start_time))
+f_result.write("\n\n** 파일 복사 소요시간: {}초".format(round(time.time() - start_time),4))
+print("Copy File 실행시간: {}초".format(round(time.time() - start_time),4))
 print("==================   Copy File End   ===================== \n.\n.\n.")
 
 
 
-## 전체결과 파일 생성
-text_str = os.path.join(os.getcwd(), "Result.txt")
-f = open(text_str, "w")
-f.write("** 작업이 완료되었습니다.")
-print("** 작업이 완료되었습니다.")
-f.close()
+
+f_result.write("\n** 작업이 완료되었습니다.")
+f_result.close()
